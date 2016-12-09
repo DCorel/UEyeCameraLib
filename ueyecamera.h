@@ -84,6 +84,10 @@ public:
     void set_CameraHandle(int CameraHandle);
     void get_CameraHandle(int& CameraHandle);
     void get_ImageParam(SENSORINFO& sensorInfo);
+    void get_CameraParameters(CameraParameters &camParameters);
+    void get_ImageMemoryID(int &MemoryID);
+    char *get_ImageMemoryPointer();
+
 
 
 public:
@@ -103,7 +107,7 @@ private:
     INT m_MEM_ID;
     IS_LUT_CONFIGURATION_64 m_LUT;
     UEYE_CAMERA_LIST* m_CameraList;
-    CameraParameters CamParam;
+    CameraParameters m_CamParam;
     //CAM_REGISTER cam_reg;
 
 

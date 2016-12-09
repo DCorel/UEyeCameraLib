@@ -15,6 +15,23 @@ void UEyeCamera::get_CameraHandle(int &CameraHandle)
     CameraHandle = m_CameraHandle;
 }
 
+char* UEyeCamera::get_ImageMemoryPointer()
+{
+    //char ImageMemoryPointer = m_ImageData;
+    return (m_ImageData);
+}
+
+void UEyeCamera::get_ImageMemoryID(int &MemoryID)
+{
+    MemoryID = m_MEM_ID;
+}
+
+void UEyeCamera::get_CameraParameters(CameraParameters &camParameters)
+{
+    camParameters.ExposureTime = m_CamParam.ExposureTime;
+    camParameters.HardwareGain = m_CamParam.HardwareGain;
+}
+
 
 void UEyeCamera::GetCameraID(string &expected_camera_serial,bool &result,int &cameraID)
 {
@@ -132,11 +149,11 @@ void UEyeCamera::GetParameters(CAM_REGISTER cam_reg)
 {
     if(cam_reg == CAM_GAIN)
     {
-        CamParam.HardwareGain = is_SetHardwareGain (m_CameraHandle, IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
+        m_CamParam.HardwareGain = is_SetHardwareGain (m_CameraHandle, IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
     }
     if(cam_reg == CAM_EXPOSURE)
     {
-        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_GET_EXPOSURE, &CamParam.ExposureTime, sizeof(double)) != IS_SUCCESS)
+        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_GET_EXPOSURE, &m_CamParam.ExposureTime, sizeof(double)) != IS_SUCCESS)
         {
             UEyeCameraException e(GET_PARAMETERS_ERROR);
             throw e;
