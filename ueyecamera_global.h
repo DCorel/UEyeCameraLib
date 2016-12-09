@@ -1,0 +1,12 @@
+#ifndef UEYECAMERA_GLOBAL_H
+#define UEYECAMERA_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(UEYECAMERA_LIBRARY)
+#  define UEYECAMERASHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define UEYECAMERASHARED_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // UEYECAMERA_GLOBAL_H
