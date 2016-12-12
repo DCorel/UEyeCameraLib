@@ -38,12 +38,12 @@ public:
 
     virtual void Connect()=0;
     virtual void Disconnect()=0;
-    virtual void SetParameters(CAM_REGISTER register, CAM_VALUE value)=0;
+    virtual void SetParameters()=0;//CAM_REGISTER reg, CAM_VALUE value)=0;
     virtual void SetLUT(unsigned char* UserDefinedLUT, int size)=0;
     virtual void GetLUT()=0;
     virtual void GetConnectedCameras()=0;
     virtual void ImageCapture()=0;
-    virtual void GetParameters(CAM_REGISTER register)=0;
+    virtual void GetParameters()=0;
     virtual void AddBufferToSequence()=0;
     virtual void SaveImage(string FILEPATH, string FILENAME, string ImageFormat, int ImageQuality)=0;
     virtual void AllocateMemory()=0;

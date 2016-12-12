@@ -32,6 +32,11 @@ void UEyeCamera::get_CameraParameters(CameraParameters &camParameters)
     camParameters.HardwareGain = m_CamParam.HardwareGain;
 }
 
+void UEyeCamera::set_CameraParameters(int gain, double exposure)
+{
+    m_CamParam.ExposureTime = exposure;
+    m_CamParam.HardwareGain = gain;
+}
 
 void UEyeCamera::GetCameraID(string &expected_camera_serial,bool &result,int &cameraID)
 {
@@ -119,9 +124,10 @@ void UEyeCamera::Disconnect()
 
 }
 
-void UEyeCamera::SetParameters(CAM_REGISTER cam_reg, CAM_VALUE value)
+/************************OBSOLETE FUNCTION******************************
+void UEyeCamera::SetParameters(CAM_REGISTER reg, CAM_VALUE value)
 {
-    if(cam_reg == CAM_GAIN)
+    if(reg == 0x00)
     {
         if(value.i_val < 0 || value.i_val > 100){
             throw "Not a valid gain value!";
@@ -134,7 +140,7 @@ void UEyeCamera::SetParameters(CAM_REGISTER cam_reg, CAM_VALUE value)
             }
         }
     }
-    if(cam_reg == CAM_EXPOSURE)
+    if(reg == 0x01)
     {
         double *time_ms = &value.d_value;
         if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
@@ -144,22 +150,44 @@ void UEyeCamera::SetParameters(CAM_REGISTER cam_reg, CAM_VALUE value)
         }
     }
 }
+************************************************************************/
 
-void UEyeCamera::GetParameters(CAM_REGISTER cam_reg)
+
+void UEyeCamera::SetParameters()
 {
-    if(cam_reg == CAM_GAIN)
+    if(m_CamParam.HardwareGain > 0 && m_CamParam.HardwareGain < 100)
     {
-        m_CamParam.HardwareGain = is_SetHardwareGain (m_CameraHandle, IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
-    }
-    if(cam_reg == CAM_EXPOSURE)
-    {
-        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_GET_EXPOSURE, &m_CamParam.ExposureTime, sizeof(double)) != IS_SUCCESS)
+        INT rnet = is_SetHardwareGain (m_CameraHandle, m_CamParam.HardwareGain, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
+        /*
+        if(is_SetHardwareGain (m_CameraHandle, m_CameraParameters.i_val, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER) != IS_SUCCESS)
         {
-            UEyeCameraException e(GET_PARAMETERS_ERROR);
+            UEyeCameraException e(SET_PARAMETERS_ERROR);
+            throw e;
+        }*/
+    }
+
+    if(m_CamParam.ExposureTime > 0.0 && m_CamParam.ExposureTime < 11.45)
+    {
+        double *time_ms = &m_CamParam.ExposureTime;
+        //INT rnet2 = is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double));
+        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
+        {
+          UEyeCameraException e(SET_PARAMETERS_ERROR);
             throw e;
         }
     }
+}
 
+void UEyeCamera::GetParameters()
+{
+
+    m_CamParam.HardwareGain = is_SetHardwareGain (m_CameraHandle, IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
+
+    if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_GET_EXPOSURE, &m_CamParam.ExposureTime, sizeof(double)) != IS_SUCCESS)
+    {
+            UEyeCameraException e(GET_PARAMETERS_ERROR);
+            throw e;
+    }
 }
 
 void UEyeCamera::AllocateMemory()
@@ -339,24 +367,28 @@ void UEyeCamera::GetConnectedCameras()
 
 void UEyeCamera::ImageCapture()
 {
+    INT rnet  = is_FreezeVideo(m_CameraHandle, IS_WAIT);
+
     if(is_SetExternalTrigger(m_CameraHandle, IS_GET_EXTERNALTRIGGER) == IS_SET_TRIGGER_SOFTWARE)
     {
-        UINT nMode = IO_FLASH_MODE_TRIGGER_HI_ACTIVE;
+        /*UINT nMode = IO_FLASH_MODE_TRIGGER_HI_ACTIVE;
         if(is_IO(m_CameraHandle, IS_IO_CMD_FLASH_SET_MODE, (void*)&nMode, sizeof(nMode)) != IS_SUCCESS)
         {
             UEyeCameraException e(CONNECT_ERROR);
             throw e;
-        }
-        if(is_FreezeVideo(m_CameraHandle, IS_WAIT) != IS_SUCCESS)
+        }*/
+
+
+        /*if(is_FreezeVideo(m_CameraHandle, IS_WAIT) != IS_SUCCESS)
         {
             UEyeCameraException e(CONNECT_ERROR);
             throw e;
-        }
+        }*/
     }else
     {
 
-        UEyeCameraException e(IMAGE_CAPTURE_ERROR);
-        throw e;
+        //UEyeCameraException e(IMAGE_CAPTURE_ERROR);
+        //throw e;
 
     }
 }
@@ -433,4 +465,21 @@ void UEyeCamera::AddBufferToSequence()
         UEyeCameraException e(ADD_BUFFER_ERROR);
         throw e;
     }
+}
+
+
+/***NOT_TESTED_YET***/
+
+void UEyeCamera::SetFrameRateCamera(double framerate)
+{
+    /*
+     * Name: Douwe Corel
+     * Function description:
+     *      Receive a value for the wished framerate and modify settings of the camera
+     *      to achieve this framerate when taking images in trigger mode.
+     * Input var: double framerate
+     * Output var: framerate
+     */
+
+
 }

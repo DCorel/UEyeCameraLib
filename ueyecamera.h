@@ -69,8 +69,8 @@ public:
 public:
     void Connect();
     void Disconnect();
-    void SetParameters(CAM_REGISTER register, CAM_VALUE value);
-    void GetParameters(CAM_REGISTER register);
+    void SetParameters();//CAM_REGISTER reg, CAM_VALUE value);
+    void GetParameters();
     void SetLUT(unsigned char *userDefinedLUT, int size);
     void GetLUT();
     void GetConnectedCameras();
@@ -85,6 +85,7 @@ public:
     void get_CameraHandle(int& CameraHandle);
     void get_ImageParam(SENSORINFO& sensorInfo);
     void get_CameraParameters(CameraParameters &camParameters);
+    void set_CameraParameters(int gain, double exposure);
     void get_ImageMemoryID(int &MemoryID);
     char *get_ImageMemoryPointer();
 
@@ -100,6 +101,7 @@ public:
     void EnableEvent(INT EventID);
     void WaitOnEvent(INT EventID, INT TimeOut);
     void ContinuousImageCapture();
+    void SetFrameRateCamera(double framerate);
 
 private:
     HIDS m_CameraHandle;
@@ -108,6 +110,7 @@ private:
     IS_LUT_CONFIGURATION_64 m_LUT;
     UEYE_CAMERA_LIST* m_CameraList;
     CameraParameters m_CamParam;
+    CAM_VALUE m_CameraParameters;
     //CAM_REGISTER cam_reg;
 
 
