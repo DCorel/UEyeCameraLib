@@ -467,6 +467,15 @@ void UEyeCamera::AddBufferToSequence()
     }
 }
 
+void UEyeCamera::ReleaseMemory()
+{
+    if(is_FreeImageMem(m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+    {
+        UEyeCameraException e(FREE_IMAGE_MEM_ERROR);
+        throw e;
+    }
+}
+
 
 /***NOT_TESTED_YET***/
 

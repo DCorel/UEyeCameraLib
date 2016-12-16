@@ -31,7 +31,8 @@ enum UEyeException
     ENABLE_EVENT_ERROR=0x13,
     WAIT_FOR_EVENT_ERROR=0x14,
     ADD_BUFFER_ERROR=0x15,
-    GET_SENSOR_INFO=0x16
+    GET_SENSOR_INFO=0x16,
+    FREE_IMAGE_MEM_ERROR=0x17
 };
 
 class UEyeCameraException: public exception
@@ -77,6 +78,7 @@ public:
     void ImageCapture();
     void SetTriggerMode(bool ExternalTriggerMode);
     void AllocateMemory();
+    void ReleaseMemory();
     void AddBufferToSequence();
     void SaveImage(string FILEPATH, string ImageFormat, int ImageQuality);
 
@@ -102,6 +104,7 @@ public:
     void WaitOnEvent(INT EventID, INT TimeOut);
     void ContinuousImageCapture();
     void SetFrameRateCamera(double framerate);
+
 
 private:
     HIDS m_CameraHandle;

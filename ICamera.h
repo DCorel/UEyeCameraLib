@@ -47,6 +47,7 @@ public:
     virtual void AddBufferToSequence()=0;
     virtual void SaveImage(string FILEPATH, string FILENAME, string ImageFormat, int ImageQuality)=0;
     virtual void AllocateMemory()=0;
+    virtual void ReleaseMemory()=0;
     virtual void SetTriggerMode(bool ExternalTriggerMode)=0;
 private:
     //virtual void LoadSettings(string xmlFilename)=0;
