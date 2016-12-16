@@ -224,7 +224,7 @@ void UEyeCamera::get_ImageParam(SENSORINFO& sensorInfo)
 }
 
 
-void UEyeCamera::SaveImage(string FILEPATH, string FILENAME, string ImageFormat, int ImageQuality)
+void UEyeCamera::SaveImage(string FILEPATH, string ImageFormat, int ImageQuality)
 {
     IMAGE_FILE_PARAMS ImageFileParams;
 
@@ -243,7 +243,7 @@ void UEyeCamera::SaveImage(string FILEPATH, string FILENAME, string ImageFormat,
         throw e;
     }
 
-    string FilePath = FILEPATH + FILENAME + ImageFormat;
+    string FilePath = FILEPATH;
     std::wstring widestr = std::wstring(FilePath.begin(), FilePath.end());
     wchar_t* pwchFileName = const_cast<wchar_t*>(widestr.c_str());
 

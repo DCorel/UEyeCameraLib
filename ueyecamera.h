@@ -78,7 +78,7 @@ public:
     void SetTriggerMode(bool ExternalTriggerMode);
     void AllocateMemory();
     void AddBufferToSequence();
-    void SaveImage(string FILEPATH, string FILENAME, string ImageFormat, int ImageQuality);
+    void SaveImage(string FILEPATH, string ImageFormat, int ImageQuality);
 
     /*Get/set functions*/
     void set_CameraHandle(int CameraHandle);
