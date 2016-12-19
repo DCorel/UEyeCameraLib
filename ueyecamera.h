@@ -67,7 +67,7 @@ class UEYECAMERASHARED_EXPORT UEyeCamera: public ICamera
 {
 public:
     UEyeCamera();
-public:
+public:    
     void Connect();
     void Disconnect();
     void SetParameters();//CAM_REGISTER reg, CAM_VALUE value);

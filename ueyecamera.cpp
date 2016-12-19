@@ -253,6 +253,15 @@ void UEyeCamera::SaveImage(string FILEPATH, string ImageFormat, int ImageQuality
     ImageFileParams.ppcImageMem = &m_ImageData;
     ImageFileParams.nQuality = ImageQuality;
 
+    unsigned char f = 15;
+    cout << f << endl;
+    unsigned char a = m_ImageData[0];
+    unsigned char b = m_ImageData[1];
+    unsigned char c = m_ImageData[2];
+    unsigned char d = m_ImageData[3];
+
+    int e = ((int*)m_ImageData)[0];
+
 
     if(is_ImageFile(m_CameraHandle, IS_IMAGE_FILE_CMD_SAVE, &ImageFileParams, sizeof(ImageFileParams)) != IS_SUCCESS)
     {
