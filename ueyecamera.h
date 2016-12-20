@@ -3,12 +3,20 @@
 #include "ueyecamera_global.h"
 #include <ICamera.h>
 #include "uEye.h"
+#include <ueye_deprecated.h>
 #include <cmath>
 #include <vector>
 #include <QList>
 #include <string>
 #include <iostream>
+#include <stdlib.h>
+#include <stdio.h>
 #include <sstream>
+
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/gpu/gpu.hpp>
+#include <qlist.h>
 
 
 using namespace std;
@@ -66,55 +74,71 @@ private:
 class UEYECAMERASHARED_EXPORT UEyeCamera: public ICamera
 {
 public:
+    /*Constructor(s)/Destructor(s)*/
     UEyeCamera();
+    ~UEyeCamera();
 public:    
+    /*ICamera interface functions*/
     void Connect();
     void Disconnect();
-    void SetParameters();//CAM_REGISTER reg, CAM_VALUE value);
-    void GetParameters();
+    void UpdateParameters();
+    void SetParameters();
     void SetLUT(unsigned char *userDefinedLUT, int size);
-    void GetLUT();
+    void UpdateLUT();
     void GetConnectedCameras();
-    void ImageCapture();
+    void SingleImageCapture();
+    void SequentialImageCapture();
     void SetTriggerMode(bool ExternalTriggerMode);
     void AllocateMemory();
     void ReleaseMemory();
     void AddBufferToSequence();
-    void SaveImage(string FILEPATH, string ImageFormat, int ImageQuality);
-
-    /*Get/set functions*/
-    void set_CameraHandle(int CameraHandle);
-    void get_CameraHandle(int& CameraHandle);
-    void get_ImageParam(SENSORINFO& sensorInfo);
-    void get_CameraParameters(CameraParameters &camParameters);
-    void set_CameraParameters(int gain, double exposure);
-    void get_ImageMemoryID(int &MemoryID);
-    char *get_ImageMemoryPointer();
-
-
 
 public:
-/*@DC: not reviewed yet*/
+    /*Get/Set Member vars functions*/
+    IplImage * GetIplImage();
+    char *GetImageMemoryPointer();
+    void SetCameraHandle();
+    void GetCameraHandle(int& CameraHandle);
+    void GetImageParam(SENSORINFO& sensorInfo);
+    void GetCameraParameters(CameraParameters &camParameters);
+    void SetCameraParameters(int gain, double exposure);
+    void GetImageMemoryID(int &MemoryID);
+    void SetIplImage(int width, int height);
+    void SetCameraBuffer(int BitsPerPixel);
     void GetAvailableCameraIdentifiers(vector<UEYE_CAMERA_INFO>& camera_identifier_list);
-    void GetCameraID(string &expected_camera_serial,bool &result,int &cameraID);
-    void ThrowException();
+    void GetCameraID(string &expected_camera_serial, bool &result);
+
+public:
+    /*UEye-only functions*/
     void GetUEyeCameraAmountOfTriggers(int &ammountOfTriggers);
     void GetUEyeCameraTriggerInputStatus(int &TriggerStatus);
     void EnableEvent(INT EventID);
     void WaitOnEvent(INT EventID, INT TimeOut);
-    void ContinuousImageCapture();
+    void ConvertImageFromBufferToIplImage();
+    void SaveIplImageList(int ListSize, QList<IplImage *> ImageList, string SavePath);
+    void SaveImage(string FILEPATH, string ImageFormat, int ImageQuality);
+
+public:
+/*@DC: not reviewed/tested properly yet*/
+    void ThrowException();
     void SetFrameRateCamera(double framerate);
 
-
 private:
-    HIDS m_CameraHandle;
-    char* m_ImageData;
     INT m_MEM_ID;
-    IS_LUT_CONFIGURATION_64 m_LUT;
-    UEYE_CAMERA_LIST* m_CameraList;
-    CameraParameters m_CamParam;
+    HIDS m_CameraHandle;
     CAM_VALUE m_CameraParameters;
-    //CAM_REGISTER cam_reg;
+    UEYE_CAMERA_LIST* m_CameraList;
+    IS_LUT_CONFIGURATION_64 m_LUT;
+
+    IplImage * m_img;
+    CameraParameters m_CamParam;
+
+    int m_CameraID;
+    int m_img_width;
+    int m_img_height;
+    int m_img_bpp;
+    char* m_ImageData;
+    double m_ExposureTime;
 
 
 };

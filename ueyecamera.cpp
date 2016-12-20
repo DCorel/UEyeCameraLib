@@ -1,184 +1,46 @@
 #include "ueyecamera.h"
 
+using namespace std;
+
+/*Constructor(s)/Destructor(s)*/
 UEyeCamera::UEyeCamera()
 {
 }
 
-/*Get and Set functions*/
-void UEyeCamera::set_CameraHandle(int CameraHandle)
+UEyeCamera::~UEyeCamera()
 {
-    m_CameraHandle = CameraHandle;
 }
 
-void UEyeCamera::get_CameraHandle(int &CameraHandle)
-{
-    CameraHandle = m_CameraHandle;
-}
+/*****************************************************************************************************/
 
-char* UEyeCamera::get_ImageMemoryPointer()
-{
-    //char ImageMemoryPointer = m_ImageData;
-    return (m_ImageData);
-}
 
-void UEyeCamera::get_ImageMemoryID(int &MemoryID)
-{
-    MemoryID = m_MEM_ID;
-}
 
-void UEyeCamera::get_CameraParameters(CameraParameters &camParameters)
-{
-    camParameters.ExposureTime = m_CamParam.ExposureTime;
-    camParameters.HardwareGain = m_CamParam.HardwareGain;
-}
 
-void UEyeCamera::set_CameraParameters(int gain, double exposure)
-{
-    m_CamParam.ExposureTime = exposure;
-    m_CamParam.HardwareGain = gain;
-}
 
-void UEyeCamera::GetCameraID(string &expected_camera_serial,bool &result,int &cameraID)
-{
-    result = false;
-    INT pnNumCams;
-    if(is_GetNumberOfCameras (&pnNumCams) != IS_SUCCESS)
-    {
-        UEyeCameraException e(CONNECT_ERROR);
-        throw e;
-    }
 
-    m_CameraList = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + pnNumCams * sizeof (UEYE_CAMERA_INFO)];
-    m_CameraList->dwCount = pnNumCams;
 
-    //Retrieve camera info
-    if (is_GetCameraList(m_CameraList) != IS_SUCCESS)
-    {
-        UEyeCameraException e(CONNECT_ERROR);
-        throw e;
-    }
 
-    string test = string(m_CameraList[0].uci[0].SerNo).c_str();
 
-    for(int i=0;i<pnNumCams;i++)
-    {
-        //if(strcmp(expected_camera_serial.c_str(), string(m_CameraList[i].uci[0].SerNo).c_str())!=0)
-        if(expected_camera_serial.c_str() == test)
-        {
-            cameraID = m_CameraList[i].uci[0].dwCameraID;
-            result = true;
-        }
-    }
-}
-
-/*Above function GetCameraID makes this function obsolete*/
-void UEyeCamera::GetAvailableCameraIdentifiers(vector<UEYE_CAMERA_INFO> &camera_identifier_list)
-{
-
-    camera_identifier_list.clear();
-    INT pnNumCams;
-    if(is_GetNumberOfCameras (&pnNumCams) != IS_SUCCESS)
-    {
-        UEyeCameraException e(CONNECT_ERROR);
-        throw e;
-    }
-
-    m_CameraList = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + pnNumCams * sizeof (UEYE_CAMERA_INFO)];
-    m_CameraList->dwCount = pnNumCams;
-
-    //Retrieve camera info
-    if (is_GetCameraList(m_CameraList) != IS_SUCCESS)
-    {
-        UEyeCameraException e(CONNECT_ERROR);
-        throw e;
-    }
-
-    UEYE_CAMERA_INFO element;
-    for(int i=0;i<pnNumCams;i++)
-    {
-        element = m_CameraList[i].uci[0];
-        camera_identifier_list.push_back(element);
-    }
-}
-/********************************************************************************************************************/
-
+/*ICamera interface functions*/
 void UEyeCamera::Connect()
 {
-
     if(is_InitCamera(&m_CameraHandle, NULL) != IS_SUCCESS)
     {
         UEyeCameraException e(CONNECT_ERROR);
         throw e;
     }
-
 }
 
 void UEyeCamera::Disconnect()
 {
-
     if(is_ExitCamera(m_CameraHandle) != IS_SUCCESS)
     {
         UEyeCameraException e(DISCONNECT_ERROR);
         throw e;
     }
-
 }
 
-/************************OBSOLETE FUNCTION******************************
-void UEyeCamera::SetParameters(CAM_REGISTER reg, CAM_VALUE value)
-{
-    if(reg == 0x00)
-    {
-        if(value.i_val < 0 || value.i_val > 100){
-            throw "Not a valid gain value!";
-        }else
-        {
-            if(is_SetHardwareGain (m_CameraHandle, value.i_val, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER) != IS_SUCCESS)
-            {
-                UEyeCameraException e(SET_PARAMETERS_ERROR);
-                throw e;
-            }
-        }
-    }
-    if(reg == 0x01)
-    {
-        double *time_ms = &value.d_value;
-        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
-        {
-            UEyeCameraException e(SET_PARAMETERS_ERROR);
-            throw e;
-        }
-    }
-}
-************************************************************************/
-
-
-void UEyeCamera::SetParameters()
-{
-    if(m_CamParam.HardwareGain > 0 && m_CamParam.HardwareGain < 100)
-    {
-        INT rnet = is_SetHardwareGain (m_CameraHandle, m_CamParam.HardwareGain, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
-        /*
-        if(is_SetHardwareGain (m_CameraHandle, m_CameraParameters.i_val, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER) != IS_SUCCESS)
-        {
-            UEyeCameraException e(SET_PARAMETERS_ERROR);
-            throw e;
-        }*/
-    }
-
-    if(m_CamParam.ExposureTime > 0.0 && m_CamParam.ExposureTime < 11.45)
-    {
-        double *time_ms = &m_CamParam.ExposureTime;
-        //INT rnet2 = is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double));
-        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
-        {
-          UEyeCameraException e(SET_PARAMETERS_ERROR);
-            throw e;
-        }
-    }
-}
-
-void UEyeCamera::GetParameters()
+void UEyeCamera::UpdateParameters()
 {
 
     m_CamParam.HardwareGain = is_SetHardwareGain (m_CameraHandle, IS_GET_MASTER_GAIN, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
@@ -190,85 +52,15 @@ void UEyeCamera::GetParameters()
     }
 }
 
-void UEyeCamera::AllocateMemory()
+void UEyeCamera::SetParameters()
 {
-    SENSORINFO pInfo;
-
-
-    if(is_GetSensorInfo (m_CameraHandle, &pInfo) != IS_SUCCESS)
-    {
-        UEyeCameraException e(GET_SENSOR_INFO);
-        throw e;
-    }
-
-    if(is_AllocImageMem (m_CameraHandle, pInfo.nMaxWidth, pInfo.nMaxHeight, 8, &m_ImageData, &m_MEM_ID) != IS_SUCCESS)
-    {
-        UEyeCameraException e(ALLOCATE_MEMORY_ERROR);
-        throw e;
-    }
-
-    if(is_SetImageMem (m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
-    {
-        UEyeCameraException e(ALLOCATE_MEMORY_ERROR);
-        throw e;
-    }
+    //Gain is not used in this function yet -> needs to be implemented as soon as it is needed...
+    is_SetDisplayMode (m_CameraHandle, IS_SET_DM_DIB);
+    is_SetColorMode (m_CameraHandle, IS_CM_RGB8_PACKED);
+    is_SetImageSize (m_CameraHandle, m_img_width, m_img_height);
+    is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &m_ExposureTime, sizeof(m_ExposureTime));
 }
 
-void UEyeCamera::get_ImageParam(SENSORINFO& sensorInfo)
-{
-    if(is_GetSensorInfo (m_CameraHandle, &sensorInfo) != IS_SUCCESS)
-    {
-        UEyeCameraException e(GET_SENSOR_INFO);
-        throw e;
-    }
-}
-
-
-void UEyeCamera::SaveImage(string FILEPATH, string ImageFormat, int ImageQuality)
-{
-    IMAGE_FILE_PARAMS ImageFileParams;
-
-    if(ImageFormat == "JPEG")
-    {
-        ImageFileParams.nFileType = IS_IMG_JPG;
-    }else if(ImageFormat == "PNG")
-    {
-        ImageFileParams.nFileType = IS_IMG_PNG;
-    }else if(ImageFormat == "BMP")
-    {
-        ImageFileParams.nFileType = IS_IMG_BMP;
-    }else
-    {
-        UEyeCameraException e(IMAGE_FORMAT_INPUT_ERROR);
-        throw e;
-    }
-
-    string FilePath = FILEPATH;
-    std::wstring widestr = std::wstring(FilePath.begin(), FilePath.end());
-    wchar_t* pwchFileName = const_cast<wchar_t*>(widestr.c_str());
-
-    UINT ImageID = UINT(m_MEM_ID);
-    ImageFileParams.pwchFileName = pwchFileName;
-    ImageFileParams.pnImageID = &ImageID;
-    ImageFileParams.ppcImageMem = &m_ImageData;
-    ImageFileParams.nQuality = ImageQuality;
-
-    unsigned char f = 15;
-    cout << f << endl;
-    unsigned char a = m_ImageData[0];
-    unsigned char b = m_ImageData[1];
-    unsigned char c = m_ImageData[2];
-    unsigned char d = m_ImageData[3];
-
-    int e = ((int*)m_ImageData)[0];
-
-
-    if(is_ImageFile(m_CameraHandle, IS_IMAGE_FILE_CMD_SAVE, &ImageFileParams, sizeof(ImageFileParams)) != IS_SUCCESS)
-    {
-        UEyeCameraException e(SAVE_IMAGE_ERROR);
-        throw e;
-    }
-}
 
 void UEyeCamera::SetLUT(unsigned char *userDefinedLUT, int size)
 {
@@ -336,14 +128,254 @@ void UEyeCamera::SetLUT(unsigned char *userDefinedLUT, int size)
     }
 }
 
-void UEyeCamera::GetLUT(){
+void UEyeCamera::UpdateLUT(){
 
     if(is_LUT(m_CameraHandle, IS_LUT_CMD_GET_USER_LUT, (void*) &m_LUT, sizeof(m_LUT)) != IS_SUCCESS)
     {
         UEyeCameraException e(GET_LUT_ERROR);
         throw e;
     }
+}
 
+void UEyeCamera::GetCameraID(string &expected_camera_serial,bool &result) //Nog even naar kijken!
+{
+    result = false;
+    INT pnNumCams;
+    if(is_GetNumberOfCameras (&pnNumCams) != IS_SUCCESS)
+    {
+        UEyeCameraException e(CONNECT_ERROR);
+        throw e;
+    }
+
+    m_CameraList = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + pnNumCams * sizeof (UEYE_CAMERA_INFO)];
+    m_CameraList->dwCount = pnNumCams;
+
+    //Retrieve camera info
+    if (is_GetCameraList(m_CameraList) != IS_SUCCESS)
+    {
+        UEyeCameraException e(CONNECT_ERROR);
+        throw e;
+    }
+
+    string test = string(m_CameraList[0].uci[0].SerNo).c_str();
+
+    for(int i=0;i<pnNumCams;i++)
+    {
+        if(expected_camera_serial.c_str() == test)
+        {
+            m_CameraID = m_CameraList[i].uci[0].dwCameraID;
+            result = true;
+        }
+    }
+}
+
+void UEyeCamera::SingleImageCapture()
+{
+    if(is_FreezeVideo(m_CameraHandle, IS_WAIT) != IS_SUCCESS)
+    {
+        UEyeCameraException e(IMAGE_CAPTURE_ERROR);
+        throw e;
+    }
+}
+
+void UEyeCamera::SequentialImageCapture()
+{
+    if(is_CaptureVideo(m_CameraHandle, IS_DONT_WAIT) != IS_SUCCESS)
+    {
+        UEyeCameraException e(IMAGE_CAPTURE_ERROR);
+        throw e;
+    }
+}
+
+void UEyeCamera::SetTriggerMode(bool ExternalTriggerMode)
+{
+    if(ExternalTriggerMode == true)
+    {
+        is_SetExternalTrigger(m_CameraHandle, IS_SET_TRIGGER_LO_HI); //Sets the hardware trigger on the rising edge
+    }else
+    {
+        is_SetExternalTrigger(m_CameraHandle, IS_SET_TRIGGER_SOFTWARE); //Sets the software trigger to be used. Image will be captured on ImageCapture();
+    }
+}
+
+void UEyeCamera::AllocateMemory()
+{
+    SENSORINFO pInfo;
+    if(is_GetSensorInfo (m_CameraHandle, &pInfo) != IS_SUCCESS)
+    {
+        UEyeCameraException e(GET_SENSOR_INFO);
+        throw e;
+    }
+    if(is_AllocImageMem (m_CameraHandle, pInfo.nMaxWidth, pInfo.nMaxHeight, 8, &m_ImageData, &m_MEM_ID) != IS_SUCCESS)
+    {
+        UEyeCameraException e(ALLOCATE_MEMORY_ERROR);
+        throw e;
+    }
+    if(is_SetImageMem (m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+    {
+        UEyeCameraException e(ALLOCATE_MEMORY_ERROR);
+        throw e;
+    }
+}
+
+void UEyeCamera::AddBufferToSequence()
+{
+    if(is_AddToSequence (m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+    {
+        UEyeCameraException e(ADD_BUFFER_ERROR);
+        throw e;
+    }
+}
+
+void UEyeCamera::ReleaseMemory()
+{
+    if(is_FreeImageMem(m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+    {
+        UEyeCameraException e(FREE_IMAGE_MEM_ERROR);
+        throw e;
+    }
+}
+/*****************************************************************************************/
+
+
+
+
+
+
+
+
+
+/*Get and Set functions*/
+IplImage * UEyeCamera::GetIplImage()
+{
+    return(m_img);
+}
+
+char* UEyeCamera::GetImageMemoryPointer()
+{
+    return (m_ImageData);
+}
+
+void UEyeCamera::SetIplImage(int width, int height)
+{
+    m_img_width = width;
+    m_img_height = height;
+    m_img=cvCreateImage(cvSize(m_img_width, m_img_height), IPL_DEPTH_8U, 3);
+    m_img->ID=0;
+    m_img->nChannels=3;
+    m_img->alphaChannel=0;
+    m_img->depth=8;
+    m_img->dataOrder=0;
+    m_img->origin=0;
+    m_img->align=4;
+    m_img->width=m_img_width;
+    m_img->height=m_img_height;
+    m_img->roi=NULL;
+    m_img->maskROI=NULL;
+    m_img->imageId=NULL;
+    m_img->tileInfo=NULL;
+    m_img->imageSize=3*m_img_width*m_img_height;
+    m_img->widthStep=3*m_img_width;
+}
+
+void UEyeCamera::SetCameraHandle()
+{
+    m_CameraHandle = m_CameraID;
+}
+
+void UEyeCamera::GetCameraHandle(int &CameraHandle)
+{
+    CameraHandle = m_CameraHandle;
+}
+
+void UEyeCamera::GetImageParam(SENSORINFO& sensorInfo)
+{
+    if(is_GetSensorInfo (m_CameraHandle, &sensorInfo) != IS_SUCCESS)
+    {
+        UEyeCameraException e(GET_SENSOR_INFO);
+        throw e;
+    }
+}
+
+void UEyeCamera::GetCameraParameters(CameraParameters &camParameters)
+{
+    camParameters.ExposureTime = m_CamParam.ExposureTime;
+    camParameters.HardwareGain = m_CamParam.HardwareGain;
+}
+
+void UEyeCamera::SetCameraParameters(int gain, double exposure)
+{
+    m_CamParam.ExposureTime = exposure;
+    m_CamParam.HardwareGain = gain;
+}
+
+void UEyeCamera::GetImageMemoryID(int &MemoryID)
+{
+    MemoryID = m_MEM_ID;
+}
+
+void UEyeCamera::SetCameraBuffer(int BitsPerPixel)
+{
+    m_img_bpp = BitsPerPixel;
+    INT rnet = is_AllocImageMem(m_CameraHandle, m_img_width, m_img_height, m_img_bpp, &m_ImageData, &m_MEM_ID);
+    INT rnet2 = is_SetImageMem (m_CameraHandle, m_ImageData, m_MEM_ID);
+}
+
+/***************************************************************************************************/
+
+
+
+
+
+
+
+
+
+/*UEye-only functions*/
+void UEyeCamera::SaveImage(string FILEPATH, string ImageFormat, int ImageQuality)
+{
+    IMAGE_FILE_PARAMS ImageFileParams;
+
+    if(ImageFormat == "JPEG")
+    {
+        ImageFileParams.nFileType = IS_IMG_JPG;
+    }else if(ImageFormat == "PNG")
+    {
+        ImageFileParams.nFileType = IS_IMG_PNG;
+    }else if(ImageFormat == "BMP")
+    {
+        ImageFileParams.nFileType = IS_IMG_BMP;
+    }else
+    {
+        UEyeCameraException e(IMAGE_FORMAT_INPUT_ERROR);
+        throw e;
+    }
+
+    string FilePath = FILEPATH;
+    std::wstring widestr = std::wstring(FilePath.begin(), FilePath.end());
+    wchar_t* pwchFileName = const_cast<wchar_t*>(widestr.c_str());
+
+    UINT ImageID = UINT(m_MEM_ID);
+    ImageFileParams.pwchFileName = pwchFileName;
+    ImageFileParams.pnImageID = &ImageID;
+    ImageFileParams.ppcImageMem = &m_ImageData;
+    ImageFileParams.nQuality = ImageQuality;
+
+    unsigned char f = 15;
+    cout << f << endl;
+    unsigned char a = m_ImageData[0];
+    unsigned char b = m_ImageData[1];
+    unsigned char c = m_ImageData[2];
+    unsigned char d = m_ImageData[3];
+
+    int e = ((int*)m_ImageData)[0];
+
+
+    if(is_ImageFile(m_CameraHandle, IS_IMAGE_FILE_CMD_SAVE, &ImageFileParams, sizeof(ImageFileParams)) != IS_SUCCESS)
+    {
+        UEyeCameraException e(SAVE_IMAGE_ERROR);
+        throw e;
+    }
 }
 
 void UEyeCamera::GetConnectedCameras()
@@ -374,53 +406,7 @@ void UEyeCamera::GetConnectedCameras()
     }
 }
 
-void UEyeCamera::ImageCapture()
-{
-    INT rnet  = is_FreezeVideo(m_CameraHandle, IS_WAIT);
 
-    if(is_SetExternalTrigger(m_CameraHandle, IS_GET_EXTERNALTRIGGER) == IS_SET_TRIGGER_SOFTWARE)
-    {
-        /*UINT nMode = IO_FLASH_MODE_TRIGGER_HI_ACTIVE;
-        if(is_IO(m_CameraHandle, IS_IO_CMD_FLASH_SET_MODE, (void*)&nMode, sizeof(nMode)) != IS_SUCCESS)
-        {
-            UEyeCameraException e(CONNECT_ERROR);
-            throw e;
-        }*/
-
-
-        /*if(is_FreezeVideo(m_CameraHandle, IS_WAIT) != IS_SUCCESS)
-        {
-            UEyeCameraException e(CONNECT_ERROR);
-            throw e;
-        }*/
-    }else
-    {
-
-        //UEyeCameraException e(IMAGE_CAPTURE_ERROR);
-        //throw e;
-
-    }
-}
-
-void UEyeCamera::ContinuousImageCapture()
-{
-    if(is_CaptureVideo(m_CameraHandle, IS_DONT_WAIT) != IS_SUCCESS)
-    {
-        UEyeCameraException e(IMAGE_CAPTURE_ERROR);
-        throw e;
-    }
-}
-
-void UEyeCamera::SetTriggerMode(bool ExternalTriggerMode)
-{
-    if(ExternalTriggerMode == true)
-    {
-        is_SetExternalTrigger(m_CameraHandle, IS_SET_TRIGGER_LO_HI); //Sets the hardware trigger on the rising edge
-    }else
-    {
-        is_SetExternalTrigger(m_CameraHandle, IS_SET_TRIGGER_SOFTWARE); //Sets the software trigger to be used. Image will be captured on ImageCapture();
-    }
-}
 
 void UEyeCamera::GetUEyeCameraTriggerInputStatus(int &TriggerStatus)
 {
@@ -445,8 +431,6 @@ void UEyeCamera::EnableEvent(INT EventID)
     }
 }
 
-//Function to for an event to trigger before moving on
-
 void UEyeCamera::WaitOnEvent(INT EventID, INT TimeOut)
 {
     if(TimeOut == -1)
@@ -467,37 +451,139 @@ void UEyeCamera::WaitOnEvent(INT EventID, INT TimeOut)
 
 }
 
-void UEyeCamera::AddBufferToSequence()
+void UEyeCamera::ConvertImageFromBufferToIplImage()
 {
-    if(is_AddToSequence (m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+    void *pMemVoid; //pointer to where the image is stored
+    is_GetImageMem (m_CameraHandle, &pMemVoid);
+    m_img->imageData=(char*)pMemVoid;  //the pointer to imagaData
+    m_img->imageDataOrigin=(char*)pMemVoid; //and again
+}
+
+
+
+void UEyeCamera::SaveIplImageList(int ListSize, QList<IplImage *> ImageList, string SavePath)
+{
+    char szFullPath[256];
+    for(int i = 0; i < ListSize; i++)
     {
-        UEyeCameraException e(ADD_BUFFER_ERROR);
-        throw e;
+        sprintf(szFullPath, "%s%4.4d.bmp", SavePath.c_str(), i);
+        cvSaveImage(szFullPath, ImageList[i]);
     }
 }
 
-void UEyeCamera::ReleaseMemory()
+/*******************************************************************************************************/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*****OBSOLETE FUNCTIONS*****/
+
+/*Function GetCameraID makes this function obsolete*/
+void UEyeCamera::GetAvailableCameraIdentifiers(vector<UEYE_CAMERA_INFO> &camera_identifier_list)
 {
-    if(is_FreeImageMem(m_CameraHandle, m_ImageData, m_MEM_ID) != IS_SUCCESS)
+
+    camera_identifier_list.clear();
+    INT pnNumCams;
+    if(is_GetNumberOfCameras (&pnNumCams) != IS_SUCCESS)
     {
-        UEyeCameraException e(FREE_IMAGE_MEM_ERROR);
+        UEyeCameraException e(CONNECT_ERROR);
         throw e;
+    }
+
+    m_CameraList = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + pnNumCams * sizeof (UEYE_CAMERA_INFO)];
+    m_CameraList->dwCount = pnNumCams;
+
+    //Retrieve camera info
+    if (is_GetCameraList(m_CameraList) != IS_SUCCESS)
+    {
+        UEyeCameraException e(CONNECT_ERROR);
+        throw e;
+    }
+
+    UEYE_CAMERA_INFO element;
+    for(int i=0;i<pnNumCams;i++)
+    {
+        element = m_CameraList[i].uci[0];
+        camera_identifier_list.push_back(element);
     }
 }
 
-
-/***NOT_TESTED_YET***/
-
-void UEyeCamera::SetFrameRateCamera(double framerate)
+/************************OBSOLETE FUNCTION******************************
+void UEyeCamera::SetParameters(CAM_REGISTER reg, CAM_VALUE value)
 {
-    /*
-     * Name: Douwe Corel
-     * Function description:
-     *      Receive a value for the wished framerate and modify settings of the camera
-     *      to achieve this framerate when taking images in trigger mode.
-     * Input var: double framerate
-     * Output var: framerate
-     */
-
-
+    if(reg == 0x00)
+    {
+        if(value.i_val < 0 || value.i_val > 100){
+            throw "Not a valid gain value!";
+        }else
+        {
+            if(is_SetHardwareGain (m_CameraHandle, value.i_val, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER) != IS_SUCCESS)
+            {
+                UEyeCameraException e(SET_PARAMETERS_ERROR);
+                throw e;
+            }
+        }
+    }
+    if(reg == 0x01)
+    {
+        double *time_ms = &value.d_value;
+        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
+        {
+            UEyeCameraException e(SET_PARAMETERS_ERROR);
+            throw e;
+        }
+    }
 }
+************************************************************************/
+
+/*
+void UEyeCamera::SetParameters()
+{
+    if(m_CamParam.HardwareGain > 0 && m_CamParam.HardwareGain < 100)
+    {
+        INT rnet = is_SetHardwareGain (m_CameraHandle, m_CamParam.HardwareGain, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER);
+        /*
+        if(is_SetHardwareGain (m_CameraHandle, m_CameraParameters.i_val, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER, IS_IGNORE_PARAMETER) != IS_SUCCESS)
+        {
+            UEyeCameraException e(SET_PARAMETERS_ERROR);
+            throw e;
+        }
+    }
+
+    if(m_CamParam.ExposureTime > 0.0 && m_CamParam.ExposureTime < 11.45)
+    {
+        double *time_ms = &m_CamParam.ExposureTime;
+        //INT rnet2 = is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double));
+        if(is_Exposure(m_CameraHandle, IS_EXPOSURE_CMD_SET_EXPOSURE, time_ms, sizeof(double)) != IS_SUCCESS)
+        {
+          UEyeCameraException e(SET_PARAMETERS_ERROR);
+            throw e;
+        }
+    }
+}*/
+
+
+
+
+
