@@ -14,12 +14,14 @@
 #include <sstream>
 
 #include <opencv2/core/core.hpp>
+#include <opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/gpu/gpu.hpp>
 #include <qlist.h>
 
 
 using namespace std;
+using namespace cv;
 
 enum UEyeException
 {
@@ -95,8 +97,9 @@ public:
 
 public:
     /*Get/Set Member vars functions*/
+    Mat GetWarpedImage();
     IplImage * GetIplImage();
-    char *GetImageMemoryPointer();
+    void *GetImageMemoryPointer();
     void SetCameraHandle();
     void GetCameraHandle(int& CameraHandle);
     void GetImageParam(SENSORINFO& sensorInfo);
@@ -116,10 +119,17 @@ public:
     void WaitOnEvent(INT EventID, INT TimeOut);
     void ConvertImageFromBufferToIplImage();
     void SaveIplImageList(int ListSize, QList<IplImage *> ImageList, string SavePath);
+    void SaveMatImageList(int ListSize, QList<Mat> ImageList, string SavePath);
     void SaveImage(string FILEPATH, string ImageFormat, int ImageQuality);
 
 public:
-/*@DC: not reviewed/tested properly yet*/
+    /*Image processing functions*/
+    void WarpImageOCV(bool Init);
+    void DetermineWarpQuadPoints(int thresh);
+    void GetAveragePixelValue();
+
+public:
+    /*@DC: not reviewed/tested properly yet*/
     void ThrowException();
     void SetFrameRateCamera(double framerate);
 
@@ -130,6 +140,9 @@ private:
     UEYE_CAMERA_LIST* m_CameraList;
     IS_LUT_CONFIGURATION_64 m_LUT;
 
+    Mat m_WarpMatrix;
+    Mat m_WarpedImage;
+    Point2f m_QuadPoints[4];
     IplImage * m_img;
     CameraParameters m_CamParam;
 
@@ -137,8 +150,11 @@ private:
     int m_img_width;
     int m_img_height;
     int m_img_bpp;
+    int m_warpWidth;
+    int m_warpHeight;
     char* m_ImageData;
     double m_ExposureTime;
+
 
 
 };

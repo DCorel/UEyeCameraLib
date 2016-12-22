@@ -1,6 +1,7 @@
 #include "ueyecamera.h"
 
 using namespace std;
+using namespace cv;
 
 /*Constructor(s)/Destructor(s)*/
 UEyeCamera::UEyeCamera()
@@ -251,9 +252,16 @@ IplImage * UEyeCamera::GetIplImage()
     return(m_img);
 }
 
-char* UEyeCamera::GetImageMemoryPointer()
+Mat UEyeCamera::GetWarpedImage()
 {
-    return (m_ImageData);
+    return(m_WarpedImage);
+}
+
+void* UEyeCamera::GetImageMemoryPointer()
+{
+    void* pMemVoid;
+    is_GetImageMem (m_CameraHandle, &pMemVoid);
+    return (pMemVoid);
 }
 
 void UEyeCamera::SetIplImage(int width, int height)
@@ -299,13 +307,13 @@ void UEyeCamera::GetImageParam(SENSORINFO& sensorInfo)
 
 void UEyeCamera::GetCameraParameters(CameraParameters &camParameters)
 {
-    camParameters.ExposureTime = m_CamParam.ExposureTime;
+    camParameters.ExposureTime = m_ExposureTime;
     camParameters.HardwareGain = m_CamParam.HardwareGain;
 }
 
 void UEyeCamera::SetCameraParameters(int gain, double exposure)
 {
-    m_CamParam.ExposureTime = exposure;
+    m_ExposureTime = exposure;
     m_CamParam.HardwareGain = gain;
 }
 
@@ -318,7 +326,8 @@ void UEyeCamera::SetCameraBuffer(int BitsPerPixel)
 {
     m_img_bpp = BitsPerPixel;
     INT rnet = is_AllocImageMem(m_CameraHandle, m_img_width, m_img_height, m_img_bpp, &m_ImageData, &m_MEM_ID);
-    INT rnet2 = is_SetImageMem (m_CameraHandle, m_ImageData, m_MEM_ID);
+    //INT rnet2 = is_SetImageMem (m_CameraHandle, m_ImageData, m_MEM_ID);
+    INT rnet2 = is_AddToSequence(m_CameraHandle, m_ImageData, m_MEM_ID);
 }
 
 /***************************************************************************************************/
@@ -453,12 +462,12 @@ void UEyeCamera::WaitOnEvent(INT EventID, INT TimeOut)
 
 void UEyeCamera::ConvertImageFromBufferToIplImage()
 {
-    void *pMemVoid; //pointer to where the image is stored
-    is_GetImageMem (m_CameraHandle, &pMemVoid);
-    m_img->imageData=(char*)pMemVoid;  //the pointer to imagaData
-    m_img->imageDataOrigin=(char*)pMemVoid; //and again
-}
+    void* pMemVoid2;
+    is_GetImageMem (m_CameraHandle, &pMemVoid2);
+    m_img->imageData=(char*)pMemVoid2;  //the pointer to imagaData
+    m_img->imageDataOrigin=(char*)pMemVoid2; //and again
 
+}
 
 
 void UEyeCamera::SaveIplImageList(int ListSize, QList<IplImage *> ImageList, string SavePath)
@@ -467,7 +476,18 @@ void UEyeCamera::SaveIplImageList(int ListSize, QList<IplImage *> ImageList, str
     for(int i = 0; i < ListSize; i++)
     {
         sprintf(szFullPath, "%s%4.4d.bmp", SavePath.c_str(), i);
-        cvSaveImage(szFullPath, ImageList[i]);
+        cvSaveImage(szFullPath, ImageList.at(i));
+    }
+}
+
+void UEyeCamera::SaveMatImageList(int ListSize, QList<Mat> ImageList, string SavePath)
+{
+    char szFullPath[256];
+    for(int i = 0; i < ListSize; i++)
+    {
+        cout<<i<<endl;
+        sprintf(szFullPath, "%s%4.4d.bmp", SavePath.c_str(), i);
+        imwrite(szFullPath, ImageList.at(i));
     }
 }
 
@@ -476,6 +496,138 @@ void UEyeCamera::SaveIplImageList(int ListSize, QList<IplImage *> ImageList, str
 
 
 
+
+
+
+
+
+/*Image processing functions*/
+void UEyeCamera::WarpImageOCV(bool Init)
+{
+    Mat InputImage = *new Mat(Size(m_img_width, m_img_height),CV_8U);
+    InputImage = Mat(m_img);
+    Mat WarpedImage;
+
+    //Mat InputImage = imread("/home/stagiairpc/Desktop/SingleJobDataset/Image_0000.bmp");
+
+
+    if(Init == true)
+    {
+        Point2f outputQuad[4];
+        Point2f inputQuad[4];
+
+        inputQuad[0] = m_QuadPoints[1];
+        inputQuad[1] = m_QuadPoints[0];
+        inputQuad[2] = m_QuadPoints[2];
+        inputQuad[3] = m_QuadPoints[3];
+
+        float topx = inputQuad[1].x -  inputQuad[0].x;
+        float bottomx = inputQuad[2].x - inputQuad[3].x;
+        float lefty = inputQuad[3].y - inputQuad[0].y;
+        float righty = inputQuad[2].y - inputQuad[1].y;
+        if(topx > bottomx)
+        {
+            m_warpWidth = topx;
+        }else
+        {
+            m_warpWidth = bottomx;
+        }
+
+        if(lefty > righty)
+        {
+            m_warpHeight = lefty;
+        }else
+        {
+            m_warpHeight = righty;
+        }
+
+        outputQuad[0] = Point2f(0,0);
+        outputQuad[1] = Point2f(m_warpWidth - 1,0);
+        outputQuad[2] = Point2f(m_warpWidth - 1, m_warpHeight - 1);
+        outputQuad[3] = Point2f(0, m_warpHeight - 1);
+        m_WarpMatrix = getPerspectiveTransform(inputQuad, outputQuad);
+
+        warpPerspective(InputImage,WarpedImage,m_WarpMatrix,Size(m_warpWidth, m_warpHeight));
+
+        imshow("",WarpedImage);
+        waitKey(0);
+    }else
+    {
+        m_WarpedImage = *new Mat(Size(m_warpWidth, m_warpHeight),CV_8U);
+        warpPerspective(InputImage,m_WarpedImage,m_WarpMatrix,Size(m_warpWidth, m_warpHeight));
+    }
+
+
+
+}
+
+void UEyeCamera::DetermineWarpQuadPoints(int thresh)
+{
+    //Mat input = imread("/home/stagiairpc/Desktop/SingleJobDataset/Image_0000.bmp");
+    int x, i_old;
+    bool first = true;
+    Mat InputImage(m_img);
+    Mat InputImageGray, edges, dst, dst_norm, dst_norm_scaled;
+    dst = Mat::zeros( InputImage.size(), CV_32FC1 );
+    cvtColor(InputImage, InputImageGray, CV_BGR2GRAY );
+
+    Canny(InputImageGray, edges, 150, 50);
+
+    cornerHarris(InputImageGray, dst, 7, 5, 0.05, BORDER_DEFAULT);
+
+    // Normalizing
+    normalize( dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+    convertScaleAbs( dst_norm, dst_norm_scaled );
+    x = 0;
+    // Drawing a circle around corners
+    for( int j = 0; j < dst_norm.rows ; j++ )
+    { for( int i = 0; i < dst_norm.cols; i++ )
+      {
+        if( (int) dst_norm.at<float>(j,i) > thresh )
+        {
+            //circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0), 2, 8, 0 );
+            if(first == true)
+            {
+                cout << "j: " << j << " i: " << i << endl;
+                m_QuadPoints[x] = Point2f(i,j);
+                first = false;
+                i_old = i;
+                x++;
+                circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0), 2, 8, 0 );
+            }
+            if((i_old+10 < i || i_old-10 > i) && first == false)
+            {
+                cout << "j: " << j << " i: " << i << endl;
+                m_QuadPoints[x] = Point2f(i,j);
+                x++;
+                i_old = i;
+                circle( dst_norm_scaled, Point( i, j ), 5,  Scalar(0), 2, 8, 0 );
+            }
+       }
+      }
+     }
+}
+
+void UEyeCamera::GetAveragePixelValue()
+{
+    //unsigned char* horizontal_line = new unsigned char[image.cols];
+    Scalar average = mean(m_WarpedImage);
+    Scalar color;
+
+    char text[256];
+    sprintf(text, "Average pixel value: %i", (int) average[0]);
+    if((int) average[0] > 150)
+    {
+        color = CV_RGB(50,50,50);
+    }else
+    {
+        color = CV_RGB(255,255,255);
+    }
+
+
+    putText(m_WarpedImage, text, Point(0,15), 2, 0.5,color, 1, 8);
+
+}
 
 
 
